@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-50 text-surface-800 font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Common UI Elements for Dashboard */
+  .btn-primary {
+    @apply bg-primary-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm hover:bg-primary-700 transition duration-200 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center justify-center gap-2;
+  }
+  .btn-secondary {
+    @apply bg-white border border-surface-200 text-surface-700 font-medium py-2 px-4 rounded-lg hover:bg-surface-50 transition duration-200 focus:ring-2 focus:ring-surface-200 focus:ring-offset-2 flex items-center justify-center gap-2;
+  }
+  .input-field {
+    @apply w-full border border-surface-200 rounded-lg px-4 py-2.5 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors bg-white;
+  }
+  .card-container {
+    @apply bg-white rounded-xl shadow-card border border-surface-100;
+  }
+  .badge {
+    @apply px-2.5 py-1 text-xs font-semibold rounded-full;
+  }
+  .badge-pending {
+    @apply bg-amber-100 text-amber-700;
+  }
+  .badge-approved {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+  .badge-rejected {
+    @apply bg-rose-100 text-rose-700;
+  }
+}
+
+/* Custom Scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
