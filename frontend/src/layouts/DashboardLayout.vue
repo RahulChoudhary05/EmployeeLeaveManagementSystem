@@ -3,8 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { 
-  Menu, X, Clock, CalendarRange, FileText, LayoutDashboard, 
-  Building2, Users, UsersRound, Settings, HelpCircle, UserCog, Briefcase
+  Menu, X, Clock, CalendarRange, LayoutDashboard, Building2
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -75,65 +74,30 @@ const unreadCount = 3
       <!-- Navigation Links -->
       <nav class="flex-1 px-4 overflow-y-auto space-y-1.5 custom-scrollbar pb-6 relative">
         <router-link 
-          :to="authStore.isEmployer ? '/employer/dashboard' : '/employee/dashboard'" 
+          v-if="authStore.isEmployer"
+          to="/employer/dashboard" 
           class="flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-300 text-sm"
           :class="[$route.path.includes('dashboard') ? 'bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-md shadow-brand-500/30 font-bold hover:from-brand-600 hover:to-brand-500 scale-[1.02]' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900']"
           @click="isSidebarOpen = false"
         >
           <LayoutDashboard class="h-5 w-5" />
-          Dashboard
+          Dashboard Overview
         </router-link>
-
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
-          <Clock class="h-5 w-5 opacity-70" />
-          Timesheet
-        </a>
 
         <router-link 
-          :to="authStore.isEmployee ? '/employee/dashboard' : '/employer/dashboard'"
-          class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all font-semibold"
+          v-if="authStore.isEmployee"
+          to="/employee/dashboard"
+          class="flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-300 text-sm"
+          :class="[$route.path.includes('dashboard') ? 'bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-md shadow-brand-500/30 font-bold hover:from-brand-600 hover:to-brand-500 scale-[1.02]' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900']"
+          @click="isSidebarOpen = false"
         >
-          <CalendarRange class="h-5 w-5 opacity-70" />
+          <CalendarRange class="h-5 w-5" />
           Leave Schedule
         </router-link>
-
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
-          <FileText class="h-5 w-5 opacity-70" />
-          Saved Reports
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all mt-4">
-          <Briefcase class="h-5 w-5 opacity-70" />
-          Projects
-        </a>
-        
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
-          <Users class="h-5 w-5 opacity-70" />
-          Clients
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
-          <UserCog class="h-5 w-5 opacity-70" />
-          Staff
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
-          <UsersRound class="h-5 w-5 opacity-70" />
-          Teams
-        </a>
       </nav>
 
       <!-- Bottom Settings Links -->
       <div class="p-4 space-y-1 border-t border-surface-100">
-        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 transition-all">
-            <Settings class="h-4 w-4 opacity-70" />
-            System Settings
-          </a>
-          <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 transition-all">
-            <HelpCircle class="h-4 w-4 opacity-70" />
-            Help Service
-          </a>
-          
           <button @click="handleLogout" class="w-full mt-2 bg-rose-50 text-rose-600 px-4 py-2.5 rounded-2xl font-medium text-sm text-center hover:bg-rose-100 transition-colors border border-rose-100 border-dashed">
             Log out
           </button>

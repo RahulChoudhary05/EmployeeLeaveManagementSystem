@@ -98,7 +98,7 @@ const colors = {
   <div class="animate-fade-in flex flex-col gap-6 md:pb-10">
     
     <!-- Top Nav Header -->
-    <div class="card-container flex items-center justify-between p-3 md:p-4 bg-white/70 backdrop-blur-md sticky top-0 z-10 border border-white">
+    <div class="card-container flex items-center justify-between p-3 md:p-4 bg-white/70 backdrop-blur-md sticky top-0 z-50 border border-white">
       <div class="flex items-center gap-2">
         <h2 class="text-surface-500 text-sm md:text-base font-medium pl-2">
           Company Dashboard / <span class="text-surface-900 font-semibold tracking-tight">Panze Studio</span>
