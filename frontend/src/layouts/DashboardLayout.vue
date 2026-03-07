@@ -2,7 +2,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { LayoutDashboard, LogOut, Menu, X, Bell, Leaf } from 'lucide-vue-next'
+import { 
+  Menu, X, Clock, CalendarRange, FileText, LayoutDashboard, 
+  Building2, Users, UsersRound, Settings, HelpCircle, UserCog, Briefcase
+} from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -16,18 +19,20 @@ const handleLogout = () => {
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
+
+const unreadCount = 3
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-50 flex flex-col md:flex-row font-sans">
+  <div class="min-h-screen bg-surface-100 flex flex-col md:flex-row font-sans selection:bg-brand-200">
     
     <!-- Mobile header with hamburger -->
     <header class="md:hidden bg-white border-b border-surface-200 p-4 flex justify-between items-center z-20">
       <div class="flex items-center gap-2">
-        <div class="h-8 w-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center transform rotate-3">
-          <Leaf class="h-4 w-4 text-white -rotate-3" />
+        <div class="h-8 w-8 bg-brand-500 rounded-full flex items-center justify-center">
+          <Clock class="h-4 w-4 text-white" />
         </div>
-        <span class="font-bold text-lg text-surface-900 tracking-tight">HR Dashboard</span>
+        <span class="font-bold text-lg text-brand-700 tracking-tight">Audime</span>
       </div>
       <button @click="toggleSidebar" class="p-2 text-surface-600 hover:bg-surface-100 rounded-lg transition-colors">
         <Menu v-if="!isSidebarOpen" />
@@ -42,77 +47,126 @@ const toggleSidebar = () => {
       @click="toggleSidebar"
     ></div>
 
-    <!-- Sidebar Navigation -->
+    <!-- Sidebar Navigation - Mimicking Dribbble left pane -->
     <aside 
-      :class="[isSidebarOpen ? 'translate-x-0' : '-translate-x-full', 'md:translate-x-0 transition-transform duration-300 ease-in-out fixed md:sticky top-0 h-screen w-64 bg-white border-r border-surface-200 z-20 flex flex-col']"
+      :class="[isSidebarOpen ? 'translate-x-0' : '-translate-x-full', 'md:translate-x-0 transition-transform duration-300 ease-in-out fixed md:sticky shadow-2xl md:shadow-none top-0 h-screen w-64 bg-white z-20 flex flex-col flex-shrink-0']"
     >
-      <div class="p-6 hidden md:flex items-center gap-3">
-        <div class="h-10 w-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center shadow-md shadow-primary-500/20 transform hover:rotate-6 transition-transform">
-          <LayoutDashboard class="h-6 w-6 text-white" />
+      <!-- Logo Area -->
+      <div class="p-6 flex items-center gap-3">
+        <div class="h-9 w-9 bg-brand-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <Clock class="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 class="font-bold text-lg text-surface-900 leading-tight">LeaveFlow</h1>
-          <p class="text-xs text-surface-500 font-medium tracking-wide">HR SYNC</p>
+          <h1 class="font-bold text-xl text-brand-700 tracking-tight">Audime</h1>
         </div>
       </div>
 
-      <nav class="flex-1 px-4 py-6 md:py-2 space-y-1">
+      <!-- User/Company Menu dummy -->
+      <div class="px-5 mb-8">
+        <div class="flex items-center justify-between border border-surface-200 rounded-xl px-3 py-2 cursor-pointer hover:bg-surface-50 transition-colors bg-white shadow-sm">
+          <div class="flex items-center gap-2 text-brand-600 font-medium text-sm">
+            <Building2 class="w-4 h-4" />
+            Panze Studio
+          </div>
+          <svg class="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-4 overflow-y-auto space-y-1.5 custom-scrollbar pb-6 relative">
         <router-link 
           :to="authStore.isEmployer ? '/employer/dashboard' : '/employee/dashboard'" 
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all duration-200"
-          :class="[$route.path.includes('dashboard') ? 'bg-primary-50 text-primary-700' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900']"
+          class="flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-300 text-sm"
+          :class="[$route.path.includes('dashboard') ? 'bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-md shadow-brand-500/30 font-bold hover:from-brand-600 hover:to-brand-500 scale-[1.02]' : 'text-surface-600 hover:bg-surface-50 hover:text-surface-900']"
           @click="isSidebarOpen = false"
         >
           <LayoutDashboard class="h-5 w-5" />
-          Dashboard Overview
+          Dashboard
         </router-link>
+
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
+          <Clock class="h-5 w-5 opacity-70" />
+          Timesheet
+        </a>
+
+        <router-link 
+          :to="authStore.isEmployee ? '/employee/dashboard' : '/employer/dashboard'"
+          class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all font-semibold"
+        >
+          <CalendarRange class="h-5 w-5 opacity-70" />
+          Leave Schedule
+        </router-link>
+
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
+          <FileText class="h-5 w-5 opacity-70" />
+          Saved Reports
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all mt-4">
+          <Briefcase class="h-5 w-5 opacity-70" />
+          Projects
+        </a>
+        
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
+          <Users class="h-5 w-5 opacity-70" />
+          Clients
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
+          <UserCog class="h-5 w-5 opacity-70" />
+          Staff
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 transition-all">
+          <UsersRound class="h-5 w-5 opacity-70" />
+          Teams
+        </a>
       </nav>
 
-      <!-- User Profile & Logout -->
-      <div class="p-4 border-t border-surface-200">
-        <div class="flex items-center gap-3 px-3 mb-6 bg-surface-50 p-3 rounded-lg border border-surface-100">
-          <div class="h-10 w-10 bg-gradient-to-tr from-rose-200 to-teal-200 rounded-full flex items-center justify-center text-surface-900 font-bold border-2 border-white shadow-sm">
-            {{ authStore.user?.name ? authStore.user.name.charAt(0).toUpperCase() : 'U' }}
-          </div>
-          <div class="overflow-hidden">
-            <p class="text-sm font-semibold text-surface-900 truncate">{{ authStore.user?.name || 'User' }}</p>
-            <p class="text-xs text-surface-500 truncate capitalize">{{ authStore.user?.role || 'Guest' }}</p>
-          </div>
-        </div>
-        
-        <button 
-          @click="handleLogout" 
-          class="w-full flex items-center gap-3 px-3 py-2.5 text-rose-600 font-medium rounded-lg hover:bg-rose-50 transition-colors"
-        >
-          <LogOut class="h-5 w-5" />
-          Sign out
-        </button>
+      <!-- Bottom Settings Links -->
+      <div class="p-4 space-y-1 border-t border-surface-100">
+        <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 transition-all">
+            <Settings class="h-4 w-4 opacity-70" />
+            System Settings
+          </a>
+          <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-medium text-sm text-surface-600 hover:bg-surface-50 transition-all">
+            <HelpCircle class="h-4 w-4 opacity-70" />
+            Help Service
+          </a>
+          
+          <button @click="handleLogout" class="w-full mt-2 bg-rose-50 text-rose-600 px-4 py-2.5 rounded-2xl font-medium text-sm text-center hover:bg-rose-100 transition-colors border border-rose-100 border-dashed">
+            Log out
+          </button>
       </div>
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-      <!-- Top navbar logic for desktop -->
-      <div class="hidden md:flex bg-white h-16 border-b border-surface-200 items-center justify-between px-8 sticky top-0 z-10">
-        <h2 class="text-lg font-semibold text-surface-800 tracking-tight flex items-center gap-2">
-          Hello, <span class="capitalize text-primary-600">{{ authStore.user?.name ? authStore.user.name.split(' ')[0] : 'User' }}</span> 👋
-        </h2>
-        
-        <div class="flex items-center gap-4">
-          <button class="relative p-2 text-surface-400 hover:text-surface-600 hover:bg-surface-50 rounded-full transition-colors">
-            <Bell class="h-5 w-5" />
-            <span class="absolute top-2 right-2.5 h-2 w-2 bg-rose-500 rounded-full border border-white"></span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Page Content -->
-      <div class="flex-1 p-4 md:p-8 bg-surface-50">
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto bg-surface-50 md:rounded-tl-3xl border-l border-t border-surface-200/60 shadow-inner overflow-x-hidden relative">
+      
+      <!-- Content padding inside the rounded corner -->
+      <div class="flex-1 p-4 md:p-8 space-y-6 md:max-w-[1600px] w-full mx-auto">
         <transition name="fade" mode="out-in">
           <router-view />
         </transition>
       </div>
+
     </main>
     
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+}
+</style>

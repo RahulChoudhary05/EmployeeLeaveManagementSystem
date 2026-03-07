@@ -2,16 +2,19 @@
 import { onMounted, ref, computed } from 'vue'
 import { useLeaveStore } from '../stores/leave'
 import { format } from 'date-fns'
-import { Search, Filter, CheckCircle, XCircle, Clock, CalendarDays, ThumbsUp, ThumbsDown, User as UserIcon, Loader2 } from 'lucide-vue-next'
+import { 
+  Search, Filter, CheckCircle, XCircle, Clock, CalendarDays, 
+  ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight, CornerUpLeft, 
+  Pause, AlarmClock, Bell, User as UserIcon, Loader2, X, FileText, UsersRound
+} from 'lucide-vue-next'
 
 const leaveStore = useLeaveStore()
 
-const currentFilter = ref('All')
-const searchQuery = ref('')
-const selectedLeave = ref(null)
+const currentFilter = ref('Month')
 const showReviewModal = ref(false)
+const selectedLeave = ref(null)
+const reviewAction = ref('') 
 const reviewNote = ref('')
-const reviewAction = ref('') // 'Approved' | 'Rejected'
 const reviewError = ref('')
 
 onMounted(async () => {
@@ -21,28 +24,47 @@ onMounted(async () => {
   ])
 })
 
-const leavesList = computed(() => {
-  let list = leaveStore.leaves || []
-  
-  // Apply Status Filter
-  if (currentFilter.value !== 'All') {
-    list = list.filter(l => l.status === currentFilter.value)
-  }
+const leavesList = computed(() => leaveStore.leaves || [])
 
-  // Apply Search
-  if (searchQuery.value) {
-    const s = searchQuery.value.toLowerCase()
-    list = list.filter(l => 
-      l.employee?.name?.toLowerCase().includes(s) || 
-      l.employee?.department?.toLowerCase().includes(s)
-    )
-  }
-  return list
+// Get unique list of employees from the leaves data to populate the "Totals By Person" section
+const employeeStats = computed(() => {
+  const empMap = new Map();
+  leavesList.value.forEach(leave => {
+    if (!leave.employee) return;
+    const id = leave.employee._id;
+    if (!empMap.has(id)) {
+      empMap.set(id, {
+        id: id,
+        name: leave.employee.name,
+        department: leave.employee.department,
+        totalLeaves: 0,
+        approved: 0,
+        pending: 0,
+        avatarColor: getColorsFromName(leave.employee.name)
+      });
+    }
+    const stat = empMap.get(id);
+    stat.totalLeaves++;
+    if (leave.status === 'Approved') stat.approved++;
+    if (leave.status === 'Pending') stat.pending++;
+  })
+  return Array.from(empMap.values()).slice(0, 6); // Just show top few
 })
 
-const formatDate = (dateStr) => {
+// Avatar color generator based on name
+const getColorsFromName = (name) => {
+  const hash = String(name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colors = [
+    'from-rose-400 to-orange-400', 'from-emerald-400 to-teal-400', 
+    'from-cyan-400 to-blue-500', 'from-indigo-400 to-purple-500', 
+    'from-fuchsia-400 to-pink-500', 'from-yellow-400 to-orange-500'
+  ];
+  return colors[hash % colors.length];
+}
+
+const formatDateShort = (dateStr) => {
   if (!dateStr) return 'N/A'
-  return format(new Date(dateStr), 'MMM dd, yyyy')
+  return format(new Date(dateStr), 'MMM d')
 }
 
 const openReview = (leave, action) => {
@@ -63,188 +85,260 @@ const submitReview = async () => {
     reviewError.value = err.message
   }
 }
+
+const colors = {
+  Approved: 'bg-emerald-100 text-emerald-700',
+  Pending: 'bg-amber-100 text-amber-700',
+  Rejected: 'bg-rose-100 text-rose-700'
+}
+
 </script>
 
 <template>
-  <div class="animate-fade-in space-y-6">
+  <div class="animate-fade-in flex flex-col gap-6 md:pb-10">
     
-    <!-- Top Stats Region for Employers -->
-    <div v-if="leaveStore.stats" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="card-container bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-6 relative overflow-hidden">
-        <div class="absolute right-0 top-0 w-32 h-32 bg-white opacity-10 blur-2xl rounded-full"></div>
-        <h3 class="text-indigo-100 font-medium text-sm mb-1 uppercase tracking-wider">Total Requests</h3>
-        <p class="text-4xl font-bold">{{ leaveStore.stats.Total?.count || 0 }}</p>
+    <!-- Top Nav Header -->
+    <div class="card-container flex items-center justify-between p-3 md:p-4 bg-white/70 backdrop-blur-md sticky top-0 z-10 border border-white">
+      <div class="flex items-center gap-2">
+        <h2 class="text-surface-500 text-sm md:text-base font-medium pl-2">
+          Company Dashboard / <span class="text-surface-900 font-semibold tracking-tight">Panze Studio</span>
+        </h2>
       </div>
-
-      <div class="card-container bg-gradient-to-br from-amber-500 to-orange-600 text-white p-6 relative overflow-hidden">
-        <div class="absolute right-0 top-0 w-32 h-32 bg-white opacity-10 blur-2xl rounded-full"></div>
-        <h3 class="text-amber-100 font-medium text-sm mb-1 uppercase tracking-wider">Needs Attention</h3>
-        <p class="text-4xl font-bold flex items-center gap-3">
-          {{ leaveStore.stats.Pending?.count || 0 }}
-          <span v-if="(leaveStore.stats.Pending?.count || 0) > 0" class="text-xs bg-white text-orange-600 px-2 py-1 rounded-full animate-pulse">Action required</span>
-        </p>
-      </div>
-
-      <div class="card-container bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 relative overflow-hidden">
-         <div class="absolute right-0 top-0 w-32 h-32 bg-white opacity-10 blur-2xl rounded-full"></div>
-         <h3 class="text-emerald-100 font-medium text-sm mb-1 uppercase tracking-wider">Approved Leaves</h3>
-         <p class="text-4xl font-bold">{{ leaveStore.stats.Approved?.count || 0 }}</p>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-surface-100 rounded-full shadow-inner border border-surface-200">
+          <Pause class="w-4 h-4 text-surface-600" />
+          <span class="font-bold font-mono text-sm tracking-widest text-surface-700 pr-1">2:43:17</span>
+          <div class="bg-brand-500 p-1.5 rounded-full shadow-md shadow-brand-500/20">
+            <AlarmClock class="w-3.5 h-3.5 text-white" />
+          </div>
+        </div>
+        <button class="relative p-2 text-surface-400 hover:text-brand-600 hover:bg-surface-50 rounded-full transition-colors">
+          <Bell class="w-5 h-5" />
+          <span class="absolute top-2 right-2.5 h-2 w-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+        </button>
+        <div class="w-9 h-9 bg-gradient-to-tr from-brand-300 to-brand-500 rounded-full p-0.5 shadow-sm">
+          <div class="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-brand-700 text-sm overflow-hidden">
+            <img v-if="false" src="https://i.pravatar.cc/100" />
+            <span>AD</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Management Table Area -->
-    <div class="card-container flex flex-col min-h-[500px]">
-      
-      <!-- Toolbar -->
-      <div class="p-5 md:p-6 border-b border-surface-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-white rounded-t-xl z-10 sticky top-0">
-        <div>
-          <h2 class="text-xl font-bold text-surface-900 tracking-tight">Team Leave Requests</h2>
-          <p class="text-sm text-surface-500 mt-1">Review and manage employee time-off applications.</p>
+    <!-- Filters Row -->
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mt-2 mb-2 px-2">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <!-- Day Week Month Tabs -->
+        <div class="flex items-center p-1 bg-surface-200/50 rounded-full gap-1">
+          <button @click="currentFilter = 'Day'" :class="currentFilter === 'Day' ? 'pill-tab-active shadow-md' : 'pill-tab-inactive'" class="pill-tab text-xs px-5">Day</button>
+          <button @click="currentFilter = 'Week'" :class="currentFilter === 'Week' ? 'pill-tab-active shadow-md' : 'pill-tab-inactive'" class="pill-tab text-xs px-5">Week</button>
+          <button @click="currentFilter = 'Month'" :class="currentFilter === 'Month' ? 'pill-tab-active shadow-md' : 'pill-tab-inactive'" class="pill-tab text-xs px-5">Month</button>
         </div>
         
-        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <!-- Search -->
-          <div class="relative">
-            <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-            <input 
-              v-model="searchQuery"
-              type="text" 
-              placeholder="Search employee..." 
-              class="input-field pl-9 h-10 py-1 text-sm md:w-64"
-            />
+        <!-- Date Scroller -->
+        <div class="hidden md:flex items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-surface-200 gap-3">
+          <button class="text-surface-400 hover:text-brand-600 transition"><ChevronLeft class="w-4 h-4" /></button>
+          <span class="text-sm font-semibold text-surface-800 tracking-wide">January 2024</span>
+          <button class="text-surface-400 hover:text-brand-600 transition"><ChevronRight class="w-4 h-4" /></button>
+        </div>
+
+        <button class="hidden lg:flex items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-800 px-2 transition group">
+          Back to current month <CornerUpLeft class="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+        </button>
+      </div>
+
+      <div class="hidden md:flex items-center gap-5 text-sm font-semibold text-surface-600">
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <div class="w-4 h-4 rounded-full border-2 border-brand-500 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-brand-500"></div>
+          </div>
+          <span class="group-hover:text-surface-900 transition">Leave Summary</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <div class="w-4 h-4 rounded-full border-2 border-surface-300"></div>
+          <span class="group-hover:text-surface-900 transition font-medium">Pending Approvals</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Main Widget Rows -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-min">
+      
+      <!-- Logged Time Summary (Donut Chart representation) -->
+      <div class="card-container p-6 lg:p-8 flex flex-col shadow-float relative overflow-hidden bg-white hover:border-brand-100 transition duration-300">
+        <h3 class="text-lg font-bold text-surface-800 mb-6">Leave Summary</h3>
+        <div class="relative flex items-center justify-center flex-1 my-4">
+          <!-- CSS Donut Chart logic mimicking the image -->
+          <div class="w-48 h-48 rounded-full border-[24px] border-surface-100 relative shadow-inner">
+            <div class="absolute inset-[-24px] rounded-full border-[24px] border-brand-400 border-r-emerald-400 border-b-cyan-400 border-l-amber-400 rotate-45 transform bg-transparent z-10 opacity-90 drop-shadow-md"></div>
+            <!-- Labels in middle -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-white shadow-soft rounded-full m-[-18px]">
+              <span class="text-2xl font-black tracking-tight text-brand-900">{{ leaveStore.stats?.Total?.count || 0 }}</span>
+              <span class="text-xs font-medium text-surface-500 mt-0.5">Total Leaves</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-between px-4 text-xs font-semibold text-surface-500">
+           <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-emerald-400"></div>Approved</div>
+           <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-amber-400"></div>Pending</div>
+           <div class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-rose-400"></div>Rejected</div>
+        </div>
+      </div>
+
+      <!-- Time Summary Stats (Bar Chart Graphic dummy) -->
+      <div class="card-container lg:col-span-2 p-6 lg:p-8 shadow-card flex flex-col w-full relative group hover:border-brand-100 ">
+         <div class="flex justify-between items-center mb-6">
+           <h3 class="text-lg font-bold text-surface-800">Department Status Stats</h3>
+           <div class="flex gap-2 bg-surface-100/50 p-1 rounded-full">
+             <button class="flex items-center gap-1.5 text-xs font-bold text-brand-700 bg-white px-3 py-1.5 rounded-full shadow-sm"><FileText class="w-3.5 h-3.5" /> By Dept</button>
+             <button class="flex items-center gap-1.5 text-xs font-semibold text-surface-500 hover:text-surface-700 px-3 py-1.5 rounded-full transition"><UsersRound class="w-3.5 h-3.5" /> By Member</button>
+           </div>
+         </div>
+         <div class="flex-1 w-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+ICAgIDxwb2x5Z29uIHBvaW50cz0iMCwwIDQwLDAgNDAsNDAgMCw0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIi8+ICAgIDxwb2x5Z29uIHBvaW50cz0iMCwzOSA0MCwzOSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZTRlOGYwIi8+PC9zdmc+')] bg-repeat">
+            <div class="h-64 w-full flex items-end justify-around pb-2 pt-6 gap-2 sm:gap-4 px-2">
+               <!-- Generating dummy visual bars matching dribbble asthetics -->
+               <div v-for="i in 10" :key="i" class="w-full flex justify-center group/bar cursor-pointer">
+                  <div class="w-8 sm:w-10 flex flex-col-reverse rounded-t-lg overflow-hidden h-full group-hover/bar:bg-surface-50/50 transition">
+                     <!-- Bar segments -->
+                     <div class="w-full rounded-sm bg-gradient-to-t from-cyan-400 to-cyan-300 shadow-sm" :style="`height: ${20 + Math.random() * 30}%`"></div>
+                     <div class="w-full rounded-sm bg-gradient-to-t from-emerald-400 to-emerald-300 mt-1 shadow-sm" :style="`height: ${Math.random() * 20}%`"></div>
+                     <div class="w-full rounded-sm bg-gradient-to-t from-brand-400 to-brand-300 mt-1 shadow-sm" :style="`height: ${10 + Math.random() * 40}%`"></div>
+                  </div>
+               </div>
+            </div>
+            <div class="flex justify-around items-center w-full px-2 text-xs font-semibold text-surface-400 mt-3 pt-3 border-t-2 border-surface-200 border-dashed">
+               <span>P1</span><span>P2</span><span>P3</span><span>P4</span><span>P5</span><span>P6</span><span>P7</span><span>P8</span><span>P9</span><span>P10</span>
+            </div>
+         </div>
+      </div>
+      
+    </div>
+
+    <!-- Bottom Grids -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-min">
+      
+      <!-- Totals By Person -->
+      <div class="card-container lg:col-span-2 p-6 shadow-soft flex flex-col bg-white">
+         <h3 class="text-lg font-bold text-surface-800 mb-5">Totals By Person</h3>
+         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <!-- Emulating the employee cards from image -->
+            <div v-for="emp in employeeStats" :key="emp.id" class="border border-surface-100 rounded-2xl p-4 flex flex-col bg-surface-50/30 hover:shadow-card hover:-translate-y-1 transition-all group">
+               <div class="flex items-start justify-between">
+                  <div class="relative">
+                    <div class="w-14 h-14 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-xl font-bold border-4 border-white shadow-sm" :class="emp.avatarColor">
+                      {{ emp.name.charAt(0) }}
+                    </div>
+                    <!-- Tooltip pill indicator -->
+                    <div v-if="emp.pending > 0" class="absolute -top-1 -right-4 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow border border-brand-400 z-10 animate-bounce">
+                      Review
+                    </div>
+                  </div>
+               </div>
+               <div class="mt-4">
+                 <h4 class="font-bold text-surface-900 text-base tracking-tight">{{ emp.name }}</h4>
+                 <p class="text-xs font-medium text-surface-500 mt-0.5">{{ emp.department }}</p>
+               </div>
+               <div class="mt-4 flex items-center gap-1.5 text-sm font-semibold text-surface-700 font-mono tracking-tight bg-white rounded-lg p-2 border border-surface-100 w-max">
+                 <CalendarDays class="w-4 h-4 text-brand-500" />
+                 {{ emp.totalLeaves }} total requests
+               </div>
+               <!-- Small progress bar indicators -->
+               <div class="mt-5 flex gap-1 h-1.5 w-full rounded-full overflow-hidden">
+                 <div class="bg-gradient-to-r from-emerald-400 to-emerald-300" :style="`width: ${Math.max((emp.approved / emp.totalLeaves) * 100, 10)}%`"></div>
+                 <div class="bg-gradient-to-r from-amber-400 to-orange-300" :style="`width: ${Math.max((emp.pending / emp.totalLeaves) * 100, 5)}%`"></div>
+               </div>
+            </div>
+            
+            <div v-if="employeeStats.length === 0" class="col-span-full py-10 flex flex-col items-center justify-center text-surface-400">
+              <Loader2 v-if="leaveStore.loading" class="w-6 h-6 animate-spin mb-2 text-brand-500" />
+              <p>No member data to show</p>
+            </div>
+         </div>
+      </div>
+
+      <!-- Members Leaves column -->
+      <div class="card-container p-6 shadow-soft flex flex-col bg-white overflow-hidden relative group">
+        <div class="flex items-center justify-between mb-6">
+           <h3 class="text-lg font-bold text-surface-800">Members Leaves</h3>
+           <a href="#" class="text-sm font-semibold text-brand-600 hover:text-brand-800 transition">See All</a>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 max-h-[500px]">
+          <div v-for="leave in leavesList" :key="leave._id" class="flex gap-4 p-3 rounded-2xl hover:bg-surface-50 transition border border-transparent hover:border-surface-100 cursor-pointer" @click="openReview(leave, 'Approved')">
+             <div class="w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-bold border-2 border-white shadow-sm flex-shrink-0" :class="getColorsFromName(leave.employee?.name || '?')">
+               {{ leave.employee?.name?.charAt(0) || 'U' }}
+             </div>
+             <div class="flex-1 min-w-0">
+               <h4 class="font-bold text-surface-900 text-sm truncate">{{ leave.employee?.name }}</h4>
+               <span class="inline-flex mt-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md" :class="colors[leave.status]">
+                 {{ leave.status }}
+               </span>
+             </div>
+             <div class="text-right flex-shrink-0">
+               <div class="text-xs font-bold text-surface-800">{{ leave.totalDays }} Days</div>
+               <div class="text-[11px] font-medium text-surface-500 mt-1 whitespace-nowrap">{{ formatDateShort(leave.startDate) }} - {{ formatDateShort(leave.endDate) }}</div>
+             </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Review Action Modal (Same functionality, styled differently) -->
+    <div v-if="showReviewModal && selectedLeave" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-900/40 backdrop-blur-sm animate-fade-in">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up border border-surface-100 relative">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r" :class="reviewAction === 'Approved' ? 'from-emerald-400 to-emerald-500' : 'from-brand-400 to-brand-500'"></div>
+        
+        <form @submit.prevent="submitReview" class="p-8 pt-10 space-y-6">
+          <div class="flex justify-between items-start mb-6">
+            <h2 class="text-xl font-bold flex items-center gap-2 text-surface-900 tracking-tight">
+              {{ selectedLeave.employee?.name }}
+            </h2>
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-lg font-bold shadow-sm" :class="getColorsFromName(selectedLeave.employee?.name)">
+              {{ selectedLeave.employee?.name?.charAt(0) }}
+            </div>
           </div>
           
-          <!-- Filter -->
-          <div class="relative inline-block w-full sm:w-auto">
-            <select v-model="currentFilter" class="input-field h-10 py-1 text-sm appearance-none bg-no-repeat bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1em_1em] bg-[right_0.75rem_center] pr-10">
-              <option value="All">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Table content -->
-      <div class="overflow-x-auto relative flex-1">
-        
-        <!-- Loading State -->
-        <div v-if="leaveStore.loading && leavesList.length === 0" class="flex flex-col items-center justify-center p-16 text-surface-400">
-             <Loader2 class="h-8 w-8 animate-spin mb-4 text-primary-500" />
-             <p>Loading records...</p>
-        </div>
-
-        <table v-else-if="leavesList.length > 0" class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-surface-50 text-surface-500 text-xs uppercase tracking-wider border-b border-surface-200">
-              <th class="py-4 px-6 font-semibold">Employee</th>
-              <th class="py-4 px-6 font-semibold">Leave Type</th>
-              <th class="py-4 px-6 font-semibold">Duration (Days)</th>
-              <th class="py-4 px-6 font-semibold">Dates</th>
-              <th class="py-4 px-6 font-semibold">Reason</th>
-              <th class="py-4 px-6 font-semibold">Status</th>
-              <th class="py-4 px-6 font-semibold text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-surface-100">
-            <tr v-for="leave in leavesList" :key="leave._id" class="hover:bg-surface-50/70 transition-colors group" :class="{'bg-rose-50/20': leave.status === 'Rejected', 'bg-emerald-50/20': leave.status === 'Approved'}">
-              <td class="py-4 px-6">
-                <div class="flex items-center gap-3">
-                  <div class="h-9 w-9 rounded-full bg-gradient-to-tr from-surface-200 to-surface-300 flex items-center justify-center text-surface-700 font-bold flex-shrink-0 text-sm border border-white shadow-sm">
-                    {{ leave.employee?.name?.charAt(0).toUpperCase() || 'U' }}
-                  </div>
-                  <div>
-                    <p class="font-semibold text-surface-900 text-sm whitespace-nowrap">{{ leave.employee?.name || 'Unknown' }}</p>
-                    <p class="text-xs text-surface-500 mt-0.5">{{ leave.employee?.department || 'Employee' }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="py-4 px-6">
-                <span class="text-sm font-medium text-surface-800 bg-surface-100 px-2 py-1 rounded-md">{{ leave.leaveType }}</span>
-              </td>
-              <td class="py-4 px-6 text-center">
-                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-50 text-primary-700 font-bold text-sm border border-primary-100 shadow-sm">{{ leave.totalDays }}</span>
-              </td>
-              <td class="py-4 px-6 whitespace-nowrap">
-                <p class="text-sm text-surface-800">{{ formatDate(leave.startDate) }}</p>
-                <p class="text-xs text-surface-500 flex items-center gap-1 mt-0.5">to {{ formatDate(leave.endDate) }}</p>
-              </td>
-              <td class="py-4 px-6">
-                <p class="text-sm text-surface-600 line-clamp-2 max-w-[200px]" :title="leave.reason">{{ leave.reason }}</p>
-              </td>
-              <td class="py-4 px-6">
-                <span class="inline-flex items-center gap-1.5 badge whitespace-nowrap" :class="'badge-' + leave.status.toLowerCase()">
-                  <!-- icon dynamically -->
-                  <CheckCircle v-if="leave.status === 'Approved'" class="w-3.5 h-3.5" />
-                  <Clock v-else-if="leave.status === 'Pending'" class="w-3.5 h-3.5" />
-                  <XCircle v-else class="w-3.5 h-3.5" />
-                  {{ leave.status }}
-                </span>
-                <p v-if="leave.reviewedBy" class="text-xs text-surface-400 mt-1 whitespace-nowrap">By: {{ leave.reviewedBy.name }}</p>
-              </td>
-              <td class="py-4 px-6 text-center">
-                <div v-if="leave.status === 'Pending'" class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button @click="openReview(leave, 'Approved')" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors shadow-sm border border-emerald-200" title="Approve">
-                    <ThumbsUp class="w-4 h-4" />
-                  </button>
-                  <button @click="openReview(leave, 'Rejected')" class="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors shadow-sm border border-rose-200" title="Reject">
-                    <ThumbsDown class="w-4 h-4" />
-                  </button>
-                </div>
-                <span v-else class="text-xs text-surface-400 font-medium tracking-wide">REVIEWED</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-         <!-- Empty State -->
-        <div v-else class="flex flex-col items-center justify-center py-20 px-4 text-center">
-          <div class="bg-surface-100 p-5 rounded-full mb-4 ring-8 ring-surface-50">
-            <CheckCircle class="h-10 w-10 text-surface-400" />
-          </div>
-          <h3 class="text-xl font-bold text-surface-900 mb-1">Queue is clear</h3>
-          <p class="text-surface-500 mb-6">No matching leave requests found.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Review Action Modal -->
-    <div v-if="showReviewModal && selectedLeave" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-900/40 backdrop-blur-sm animate-fade-in">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up border border-surface-200">
-        
-        <div class="px-6 py-5 border-b border-surface-100 flex justify-between items-center" :class="reviewAction === 'Approved' ? 'bg-emerald-50' : 'bg-rose-50'">
-          <h2 class="text-lg font-bold flex items-center gap-2" :class="reviewAction === 'Approved' ? 'text-emerald-800' : 'text-rose-800'">
-            <component :is="reviewAction === 'Approved' ? ThumbsUp : ThumbsDown" class="w-5 h-5" /> 
-            {{ reviewAction === 'Approved' ? 'Approve Request' : 'Reject Request' }}
-          </h2>
-        </div>
-        
-        <form @submit.prevent="submitReview" class="p-6 space-y-5">
-          <!-- Summary card -->
-          <div class="bg-surface-50 rounded-lg p-4 border border-surface-200 text-sm">
-            <p><span class="text-surface-500">Employee:</span> <span class="font-semibold text-surface-900 ml-1">{{ selectedLeave.employee?.name }}</span></p>
-            <p class="mt-1"><span class="text-surface-500">Leave Type:</span> <span class="font-medium text-surface-900 ml-1">{{ selectedLeave.leaveType }}</span></p>
-            <p class="mt-1"><span class="text-surface-500">Duration:</span> <span class="text-surface-900 ml-1">{{ selectedLeave.totalDays }} days ({{ formatDate(selectedLeave.startDate) }} - {{ formatDate(selectedLeave.endDate) }})</span></p>
-            <p class="mt-2 text-surface-600 italic bg-white p-2 rounded border border-surface-100 block">"{{ selectedLeave.reason }}"</p>
+          <!-- Details card -->
+          <div class="bg-surface-50 rounded-2xl p-5 border border-surface-100 text-sm shadow-sm">
+            <p class="flex justify-between items-center"><span class="text-surface-500 font-medium">Leave Type</span> <span class="font-bold text-surface-900 bg-white px-2 py-1 rounded shadow-sm border border-surface-100">{{ selectedLeave.leaveType }}</span></p>
+            <div class="w-full h-px bg-surface-200/60 my-3"></div>
+            <p class="flex justify-between items-center"><span class="text-surface-500 font-medium">Duration</span> <span class="text-brand-600 font-bold bg-brand-50 px-2 py-1 rounded-md">{{ selectedLeave.totalDays }} days</span></p>
+            <p class="mt-4 text-surface-600 italic bg-white p-3 rounded-lg border border-surface-100 relative">
+              <span class="absolute -top-2 left-2 text-3xl text-surface-200">"</span>
+              <span class="relative z-10 font-medium">{{ selectedLeave.reason }}</span>
+            </p>
           </div>
 
-          <div v-if="reviewError" class="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-md text-sm">
+          <div v-if="reviewError" class="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-sm font-medium shadow-sm">
             {{ reviewError }}
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-surface-700 mb-1">Manager Note (Optional)</label>
-            <textarea v-model="reviewNote" rows="2" placeholder="Leave a remark for the employee..." class="input-field resize-none text-sm"></textarea>
+          <div v-if="selectedLeave.status === 'Pending'">
+            <label class="block text-sm font-semibold text-surface-700 mb-2">Manager Remarks</label>
+            <textarea v-model="reviewNote" rows="2" placeholder="Required for context..." class="input-field resize-none text-sm"></textarea>
           </div>
 
-          <div class="pt-2 flex justify-end gap-3">
-            <button type="button" @click="showReviewModal = false" class="btn-secondary">Cancel</button>
-            <button type="submit" :disabled="leaveStore.loading" class="flex items-center justify-center min-w-[120px] px-4 py-2 font-medium rounded-lg text-white shadow-sm transition duration-200 focus:ring-2 focus:ring-offset-2" :class="reviewAction === 'Approved' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500' : 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500'">
-              <Loader2 v-if="leaveStore.loading" class="h-4 w-4 animate-spin" />
-              <span v-else>Confirm {{ reviewAction }}</span>
+          <div class="pt-4 flex items-center gap-3">
+            <button v-if="selectedLeave.status === 'Pending'" type="button" @click.prevent="reviewAction = 'Rejected'; submitReview()" :disabled="leaveStore.loading" class="flex-1 py-2.5 rounded-xl font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition shadow-sm flex justify-center items-center gap-2 border border-rose-200/50">
+              <XCircle class="w-4 h-4" /> Reject
             </button>
+            <button v-if="selectedLeave.status === 'Pending'" type="button" @click.prevent="reviewAction = 'Approved'; submitReview()" :disabled="leaveStore.loading" class="flex-1 py-2.5 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-400 hover:to-emerald-500 transition shadow-md shadow-emerald-500/30 flex justify-center items-center gap-2 border border-emerald-500">
+              <CheckCircle class="w-4 h-4" /> Approve
+            </button>
+            
+            <button v-if="selectedLeave.status !== 'Pending'" type="button" @click.prevent="showReviewModal = false" class="w-full btn-secondary font-bold text-surface-600">
+              Close Overview
+            </button>
+
+            <!-- Loading overlay -->
+             <div v-if="leaveStore.loading" class="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center rounded-2xl">
+                <Loader2 class="w-8 h-8 animate-spin text-brand-500" />
+             </div>
           </div>
+          <button type="button" @click="showReviewModal = false" class="absolute top-4 right-4 p-2 text-surface-400 hover:text-surface-600 hover:bg-surface-50 rounded-full transition">
+            <X class="w-5 h-5" />
+          </button>
         </form>
       </div>
     </div>
