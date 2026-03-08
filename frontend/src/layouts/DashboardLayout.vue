@@ -1,14 +1,34 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { 
-  Menu, X, Clock, CalendarRange, LayoutDashboard, Building2
+  Menu, X, Clock, CalendarRange, LayoutDashboard, Building2, Bell, LogOut
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const isSidebarOpen = ref(false)
+const currentTime = ref('')
+const unreadCount = ref(2)
+let timeInterval = null
+
+const updateTime = () => {
+  const now = new Date()
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  currentTime.value = `${hours}:${minutes}:${seconds}`
+}
+
+onMounted(() => {
+  updateTime()
+  timeInterval = setInterval(updateTime, 1000)
+})
+
+onUnmounted(() => {
+  if (timeInterval) clearInterval(timeInterval)
+})
 
 const handleLogout = () => {
   authStore.logout()
@@ -18,8 +38,6 @@ const handleLogout = () => {
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
-
-const unreadCount = 3
 </script>
 
 <template>
@@ -106,6 +124,44 @@ const unreadCount = 3
 
     <!-- Main Content Area -->
     <main class="flex-1 flex flex-col h-screen overflow-y-auto bg-surface-50 md:rounded-tl-3xl border-l border-t border-surface-200/60 shadow-inner overflow-x-hidden relative">
+      
+      <!-- Top Header with Clock and Notifications -->
+      <div class="hidden md:flex items-center justify-between px-8 py-5 bg-white/80 backdrop-blur-md border-b border-surface-200/60 sticky top-0 z-10">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 text-surface-700">
+            <span class="font-semibold text-base">Company Dashboard</span>
+            <span class="text-surface-400">/</span>
+            <span class="text-surface-500 text-sm">Panze Studio</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-6">
+          <!-- Live Clock -->
+          <div class="flex items-center gap-2 px-4 py-2 bg-surface-50 rounded-xl border border-surface-200">
+            <Clock class="h-4 w-4 text-brand-500" />
+            <span class="font-mono text-sm font-medium text-surface-700">{{ currentTime }}</span>
+          </div>
+          
+          <!-- Notification Bell -->
+          <button class="relative p-2 hover:bg-surface-100 rounded-lg transition-colors">
+            <Bell class="h-5 w-5 text-surface-600" />
+            <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+              {{ unreadCount }}
+            </span>
+          </button>
+          
+          <!-- User Profile -->
+          <div class="flex items-center gap-3 px-3 py-2 bg-surface-50 rounded-xl border border-surface-200">
+            <div class="h-8 w-8 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center">
+              <span class="text-white text-sm font-bold">{{ authStore.user?.name?.charAt(0).toUpperCase() || 'U' }}</span>
+            </div>
+            <div class="text-left">
+              <p class="text-sm font-medium text-surface-700">{{ authStore.user?.name || 'User' }}</p>
+              <p class="text-xs text-surface-500 capitalize">{{ authStore.user?.role || 'employee' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <!-- Content padding inside the rounded corner -->
       <div class="flex-1 p-4 md:p-8 space-y-6 md:max-w-[1600px] w-full mx-auto">

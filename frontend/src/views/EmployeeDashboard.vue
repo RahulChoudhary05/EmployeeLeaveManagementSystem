@@ -29,7 +29,19 @@ const handleApplyError = (err) => {
   applyError.value = err.message
 }
 
+const validateDates = () => {
+  if (!form.value.startDate || !form.value.endDate) return true
+  const start = new Date(form.value.startDate)
+  const end = new Date(form.value.endDate)
+  return start <= end
+}
+
 const submitLeave = async () => {
+  if (!validateDates()) {
+    applyError.value = 'End date must be after or equal to start date'
+    return
+  }
+  
   try {
     applyError.value = ''
     await leaveStore.applyLeave(form.value)
@@ -68,60 +80,72 @@ const getStatusColor = (status) => {
   <div class="animate-fade-in space-y-6">
     
     <!-- Header banner -->
-    <div class="card-container bg-gradient-to-r from-primary-600 to-primary-800 text-white p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="card-container bg-gradient-to-r from-primary-600 via-primary-700 to-teal-600 text-white p-6 md:p-8 relative overflow-hidden">
       <div class="absolute -right-20 -top-20 w-64 h-64 bg-white opacity-10 blur-3xl rounded-full"></div>
-      <div class="relative z-10 text-center md:text-left">
-        <h1 class="text-2xl md:text-3xl font-bold mb-1">My Leave Dashboard</h1>
-        <p class="text-primary-100 text-sm md:text-base opacity-90">Manage your time off requests and view statuses</p>
+      <div class="absolute -left-10 -bottom-10 w-48 h-48 bg-teal-400 opacity-10 blur-3xl rounded-full"></div>
+      <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-center md:text-left">
+          <h1 class="text-2xl md:text-3xl font-bold mb-2 flex items-center gap-3 justify-center md:justify-start">
+            <CalendarDays class="w-8 h-8" />
+            My Leave Dashboard
+          </h1>
+          <p class="text-primary-100 text-sm md:text-base opacity-90">Track and manage your time-off requests with ease</p>
+        </div>
+        <button @click="showApplyModal = true" class="relative z-10 bg-white text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center gap-2 group">
+          <Plus class="w-5 h-5 group-hover:rotate-90 transition-transform" /> 
+          Apply for Leave
+        </button>
       </div>
-      <button @click="showApplyModal = true" class="relative z-10 bg-white text-primary-700 hover:bg-primary-50 px-5 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-black/10 flex items-center gap-2 group">
-        <Plus class="w-5 h-5 group-hover:rotate-90 transition-transform" /> 
-        Apply Leave
-      </button>
     </div>
 
     <!-- Stats Grid -->
     <div v-if="leaveStore.stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="card-container p-5 flex flex-col justify-center gap-1 group relative overflow-hidden">
-        <div class="absolute right-0 top-0 h-full w-2 bg-surface-200 group-hover:bg-primary-500 transition-colors"></div>
-        <p class="text-surface-500 text-sm font-medium">Total Applied</p>
-        <p class="text-3xl font-bold text-surface-900">{{ leaveStore.stats.Total?.count || 0 }}</p>
+      <div class="card-container p-6 flex flex-col justify-center gap-2 group hover:shadow-lg transition-all duration-300 border-l-4 border-primary-500">
+        <div class="flex items-center justify-between">
+          <p class="text-surface-600 text-sm font-semibold uppercase tracking-wide">Total Applied</p>
+          <Calendar class="w-5 h-5 text-primary-500 opacity-50" />
+        </div>
+        <p class="text-4xl font-bold text-surface-900">{{ leaveStore.stats.Total?.count || 0 }}</p>
+        <p class="text-xs text-surface-400 mt-1">All requests</p>
       </div>
       
-      <div class="card-container p-5 flex flex-col justify-center gap-1 group relative overflow-hidden">
-        <div class="absolute right-0 top-0 h-full w-2 bg-emerald-200 group-hover:bg-emerald-500 transition-colors"></div>
-        <div class="flex items-center gap-2 mb-1">
+      <div class="card-container p-6 flex flex-col justify-center gap-2 group hover:shadow-lg transition-all duration-300 border-l-4 border-emerald-500">
+        <div class="flex items-center justify-between">
+          <p class="text-surface-600 text-sm font-semibold uppercase tracking-wide">Approved</p>
           <CheckCircle class="w-5 h-5 text-emerald-500" />
-          <p class="text-surface-500 text-sm font-medium">Approved</p>
         </div>
-        <p class="text-3xl font-bold text-surface-900">{{ leaveStore.stats.Approved?.count || 0 }}</p>
+        <p class="text-4xl font-bold text-emerald-600">{{ leaveStore.stats.Approved?.count || 0 }}</p>
+        <p class="text-xs text-surface-400 mt-1">Granted leaves</p>
       </div>
 
-      <div class="card-container p-5 flex flex-col justify-center gap-1 group relative overflow-hidden">
-        <div class="absolute right-0 top-0 h-full w-2 bg-amber-200 group-hover:bg-amber-500 transition-colors"></div>
-        <div class="flex items-center gap-2 mb-1">
+      <div class="card-container p-6 flex flex-col justify-center gap-2 group hover:shadow-lg transition-all duration-300 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between">
+          <p class="text-surface-600 text-sm font-semibold uppercase tracking-wide">Pending</p>
           <Clock class="w-5 h-5 text-amber-500" />
-          <p class="text-surface-500 text-sm font-medium">Pending</p>
         </div>
-        <p class="text-3xl font-bold text-surface-900">{{ leaveStore.stats.Pending?.count || 0 }}</p>
+        <p class="text-4xl font-bold text-amber-600">{{ leaveStore.stats.Pending?.count || 0 }}</p>
+        <p class="text-xs text-surface-400 mt-1">Awaiting review</p>
       </div>
 
-      <div class="card-container p-5 flex flex-col justify-center gap-1 group relative overflow-hidden">
-        <div class="absolute right-0 top-0 h-full w-2 bg-rose-200 group-hover:bg-rose-500 transition-colors"></div>
-        <div class="flex items-center gap-2 mb-1">
+      <div class="card-container p-6 flex flex-col justify-center gap-2 group hover:shadow-lg transition-all duration-300 border-l-4 border-rose-500">
+        <div class="flex items-center justify-between">
+          <p class="text-surface-600 text-sm font-semibold uppercase tracking-wide">Rejected</p>
           <XCircle class="w-5 h-5 text-rose-500" />
-          <p class="text-surface-500 text-sm font-medium">Rejected</p>
         </div>
-        <p class="text-3xl font-bold text-surface-900">{{ leaveStore.stats.Rejected?.count || 0 }}</p>
+        <p class="text-4xl font-bold text-rose-600">{{ leaveStore.stats.Rejected?.count || 0 }}</p>
+        <p class="text-xs text-surface-400 mt-1">Declined leaves</p>
       </div>
     </div>
 
     <!-- Leave History Table Card -->
-    <div class="card-container flex flex-col">
-      <div class="p-6 border-b border-surface-100 flex justify-between items-center">
+    <div class="card-container flex flex-col shadow-lg">
+      <div class="p-6 border-b border-surface-100 flex justify-between items-center bg-gradient-to-r from-surface-50 to-white">
         <div>
-          <h2 class="text-lg font-bold text-surface-900">Recent Applications</h2>
-          <p class="text-sm text-surface-500">Your latest leave requests and their statuses.</p>
+          <h2 class="text-xl font-bold text-surface-900 flex items-center gap-2">
+            <Calendar class="w-5 h-5 text-primary-600" />
+            Leave Applications History
+          </h2>
+          <p class="text-sm text-surface-500 mt-1">Track all your leave requests and their current status</p>
         </div>
       </div>
       
@@ -188,22 +212,28 @@ const getStatusColor = (status) => {
     </div>
 
     <!-- Apply Leave Modal -->
-    <div v-if="showApplyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-900/60 backdrop-blur-sm animate-fade-in">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up" @click.stop>
-        <div class="px-6 py-4 border-b border-surface-100 flex justify-between items-center bg-surface-50">
-          <h2 class="text-lg font-bold text-surface-900 flex items-center gap-2"><Plus class="w-5 h-5 text-primary-500" /> Apply for Leave</h2>
-          <button @click="showApplyModal = false" class="text-surface-400 hover:text-surface-700 transition">
+    <div v-if="showApplyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-900/70 backdrop-blur-md animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up border-2 border-primary-100" @click.stop>
+        <div class="px-6 py-5 border-b border-surface-100 flex justify-between items-center bg-gradient-to-r from-primary-50 to-teal-50">
+          <h2 class="text-xl font-bold text-surface-900 flex items-center gap-2">
+            <div class="p-2 bg-primary-500 rounded-lg">
+              <Plus class="w-5 h-5 text-white" />
+            </div>
+            Apply for Leave
+          </h2>
+          <button @click="showApplyModal = false" class="text-surface-400 hover:text-surface-700 hover:bg-white/50 p-2 rounded-lg transition">
             <X class="w-5 h-5" />
           </button>
         </div>
         
-        <form @submit.prevent="submitLeave" class="p-6 space-y-4">
-          <div v-if="applyError" class="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-md text-sm">
-            {{ applyError }}
+        <form @submit.prevent="submitLeave" class="p-6 space-y-5">
+          <div v-if="applyError" class="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 rounded-r-lg text-sm flex items-start gap-3">
+            <XCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{{ applyError }}</span>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-surface-700 mb-1">Leave Type</label>
+            <label class="block text-sm font-semibold text-surface-700 mb-2">Leave Type *</label>
             <select v-model="form.leaveType" required class="input-field appearance-none bg-no-repeat bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:1em_1em] bg-[right_1rem_center]">
               <option>Sick Leave</option>
               <option>Casual Leave</option>
