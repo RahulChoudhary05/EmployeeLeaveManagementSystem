@@ -91,7 +91,7 @@ const getStatusColor = (status) => {
           </h1>
           <p class="text-primary-100 text-sm md:text-base opacity-90">Track and manage your time-off requests with ease</p>
         </div>
-        <button @click="showApplyModal = true" class="relative z-10 bg-black text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center gap-2 group">
+        <button @click="showApplyModal = true" class="relative z-10 bg-white text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-xl font-semibold transition-all shadow-xl hover:shadow-2xl hover:scale-105 flex items-center gap-2 group">
           <Plus class="w-5 h-5 group-hover:rotate-90 transition-transform" /> 
           Apply for Leave
         </button>
