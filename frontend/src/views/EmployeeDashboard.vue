@@ -80,7 +80,7 @@ const getStatusColor = (status) => {
   <div class="animate-fade-in space-y-6">
     
     <!-- Header banner -->
-    <div class="card-container bg-gradient-to-r from-primary-600 via-primary-700 to-teal-600 text-white p-6 md:p-8 relative overflow-hidden">
+    <div class="card-container bg-gradient-to-r from-primary-600 via-primary-700 to-teal-600 text-black p-6 md:p-8 relative overflow-hidden">
       <div class="absolute -right-20 -top-20 w-64 h-64 bg-black opacity-10 blur-3xl rounded-full"></div>
       <div class="absolute -left-10 -bottom-10 w-48 h-48 bg-teal-400 opacity-10 blur-3xl rounded-full"></div>
       <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
